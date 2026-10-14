@@ -4,6 +4,25 @@ set -e
 
 cd .. # Go to client root
 
+# Bundles the MacOsBuild-$1 folder in a .app bundle and zips it as SysDVRClient-MacOs-$1.app.zip
+make_app() {
+	rm -rf SysDVR-Client.app
+	mkdir -p SysDVR-Client.app/Contents/MacOS SysDVR-Client.app/Contents/Resources
+	# Everything in Contents/MacOS must be signed code on modern macOS, so the data files
+	# live in Contents/Resources and are reached through a symlink
+	cp MacOsBuild-$1/SysDVR-Client SysDVR-Client.app/Contents/MacOS/
+	cp -R MacOsBuild-$1/runtimes SysDVR-Client.app/Contents/Resources/runtimes
+	ln -s ../Resources/runtimes SysDVR-Client.app/Contents/MacOS/runtimes
+	cp Platform/MacOs/icon.icns SysDVR-Client.app/Contents/Resources/
+	sed "s/@BUNDLE_VERSION@/$(cat release_version.txt)/" Platform/MacOs/Info.plist > SysDVR-Client.app/Contents/Info.plist
+	# Like for the dylibs, no real signature, just the ad-hoc one required by arm64 macs
+	codesign --force -s - -v SysDVR-Client.app
+	rm -f SysDVRClient-MacOs-$1.app.zip
+	# -y stores symlinks as symlinks instead of following them
+	zip -ry SysDVRClient-MacOs-$1.app.zip SysDVR-Client.app
+	rm -rf SysDVR-Client.app
+}
+
 echo Checking dependencies...
 
 # All dependencies for macos are "fat" binaries meaning they contain both x64 and arm64 code
@@ -74,6 +93,9 @@ chmod +x SysDVR-Client
 zip -r ../SysDVRClient-MacOs-x64.zip *
 cd ..
 
+echo Making x64 app bundle...
+make_app x64
+
 echo Building arm64 client...
 dotnet publish -c Release -r osx-arm64 /p:SysDvrTarget=macos
 
@@ -85,5 +107,8 @@ cd MacOsBuild-arm64
 chmod +x SysDVR-Client
 zip -r ../SysDVRClient-MacOs-arm64.zip *
 cd ..
+
+echo Making arm64 app bundle...
+make_app arm64
 
 echo Done !
