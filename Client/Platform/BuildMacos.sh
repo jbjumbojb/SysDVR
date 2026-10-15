@@ -28,8 +28,8 @@ echo Checking dependencies...
 # All dependencies for macos are "fat" binaries meaning they contain both x64 and arm64 code
 # so we can just download them once and use them for both architectures
 # To avoid duplicate files we manually copy them in the release zip instead of puttig them in the runtimes folder
-mkdir macos-deps
-mkdir tmp
+mkdir -p macos-deps
+mkdir -p tmp
 
 # cimgui_rX is the git tag for for the release we are usign of cimgui
 if [ ! -e "macos-deps/cimgui_r2" ]; then
@@ -84,7 +84,7 @@ codesign -s - -v macos-deps/*.dylib
 echo Building x64 client...
 dotnet publish -c Release -r osx-x64 /p:SysDvrTarget=macos
 
-mkdir MacOsBuild-x64
+mkdir -p MacOsBuild-x64
 cp -r bin/Release/net9.0/osx-x64/publish/* MacOsBuild-x64/
 mkdir -p MacOsBuild-x64/runtimes/osx-x64/native
 cp macos-deps/* MacOsBuild-x64/runtimes/osx-x64/native/
@@ -99,7 +99,7 @@ make_app x64
 echo Building arm64 client...
 dotnet publish -c Release -r osx-arm64 /p:SysDvrTarget=macos
 
-mkdir MacOsBuild-arm64
+mkdir -p MacOsBuild-arm64
 cp -r bin/Release/net9.0/osx-arm64/publish/* MacOsBuild-arm64/
 mkdir -p MacOsBuild-arm64/runtimes/osx-arm64/native
 cp macos-deps/* MacOsBuild-arm64/runtimes/osx-arm64/native/
